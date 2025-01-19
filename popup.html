@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      width: 400px;
+      padding: 16px;
+      font-family: Arial, sans-serif;
+    }
+    .button {
+      width: 100%;
+      padding: 12px;
+      background: #1877f2;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 16px;
+    }
+    .button:hover {
+      background: #166fe5;
+    }
+    #results {
+      max-height: 400px;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+    .comment {
+      border: 1px solid #ddd;
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .name {
+      color: #1877f2;
+      font-weight: bold;
+    }
+    .meta {
+      color: #65676b;
+      font-size: 12px;
+    }
+    .content {
+      margin-bottom: 8px;
+    }
+    .stats {
+      color: #65676b;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <button class="button" id="extractButton">Extract Comments</button>
+  <div id="results"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
+

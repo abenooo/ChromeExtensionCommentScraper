@@ -1,0 +1,18 @@
+{
+    "manifest_version": 3,
+    "name": "Facebook Comment Extractor",
+    "version": "1.0",
+    "description": "Extracts comments from Facebook posts in a structured format",
+    "permissions": ["activeTab", "scripting"],
+    "action": {
+      "default_popup": "popup.html"
+    },
+    "content_scripts": [
+      {
+        "matches": ["*://*.facebook.com/*"],
+        "js": ["content.js"]
+      }
+    ]
+  }
+  
+  
