@@ -12,35 +12,38 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   });
   
   async function autoScroll() {
-    return new Promise((resolve) => {
-      const totalHeight = document.body.scrollHeight;
-      let lastHeight = 0;
-      let unchangedCount = 0;
-      const maxUnchanged = 5; // Number of attempts before considering all loaded
-      
-      const scroll = setInterval(() => {
-        window.scrollTo(0, document.body.scrollHeight);
-        
-        // Calculate and send progress
-        const currentHeight = document.body.scrollHeight;
-        const progress = Math.min(((currentHeight / totalHeight) * 100), 100);
-        chrome.runtime.sendMessage({ type: 'progress', value: Math.round(progress) });
-        
-        // Check if we've reached the bottom
-        if (currentHeight === lastHeight) {
-          unchangedCount++;
-          if (unchangedCount >= maxUnchanged) {
-            clearInterval(scroll);
-            window.scrollTo(0, 0);
-            resolve();
-          }
-        } else {
-          unchangedCount = 0;
-          lastHeight = currentHeight;
-        }
-      }, 1000);
-    });
-  }
+  return new Promise((resolve) => {
+    let lastScrollHeight = 0;
+    let scrollAttempts = 0;
+    const maxScrollAttempts = 100; // Adjust this value if needed
+
+    function scroll() {
+      const scrollHeight = document.documentElement.scrollHeight;
+      window.scrollTo(0, scrollHeight);
+
+      const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const progress = (currentScrollTop / scrollHeight) * 100;
+
+      chrome.runtime.sendMessage({ type: 'progress', value: Math.round(progress) });
+
+      if (scrollHeight > lastScrollHeight) {
+        lastScrollHeight = scrollHeight;
+        scrollAttempts = 0;
+      } else {
+        scrollAttempts++;
+      }
+
+      if (scrollAttempts >= maxScrollAttempts) {
+        console.log("Reached the end of comments or maximum scroll attempts");
+        resolve();
+      } else {
+        setTimeout(scroll, 2000); // Adjust the delay if needed
+      }
+    }
+
+    scroll();
+  });
+}
   
   function extractComments() {
     function formatDate(dateStr) {
@@ -108,12 +111,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
   
     const comments = [];
-    // Target only top-level comments
-    const commentElements = Array.from(document.querySelectorAll('[role="article"]')).filter(el => {
-      // Check if this is a top-level comment by verifying it's not nested
-      return !el.closest('[role="article"] [role="article"]');
-    });
-    
+    const commentElements = document.querySelectorAll('[role="article"]');
+  
     commentElements.forEach((comment, index) => {
       try {
         // Get the first link that contains the commenter's name
@@ -142,21 +141,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           .map(img => img.src)
           .filter(Boolean);
   
+        // Get the full name
+        const fullNameElement = comment.querySelector('a[role="link"] > span');
+        const fullName = fullNameElement ? fullNameElement.textContent.trim() : '';
+
         comments.push({
           index: index + 1,
           name: nameElement,
+          fullName: fullName, 
           profileId: profileId,
           date: formatDate(timestamp),
           likes: likes || 0,
           comment: commentText,
           imageUrls: images.join(', ')
         });
+
+        // Send progress updates for every 100 comments
+        if (index % 100 === 0) {
+          chrome.runtime.sendMessage({ 
+            type: 'extractionProgress', 
+            value: Math.round((index / commentElements.length) * 100) 
+          });
+        }
       } catch (error) {
         console.error('Error processing comment:', error);
       }
     });
-  
+
     return comments;
   }
-  
-  
+

@@ -1,11 +1,16 @@
+let isExtracting = false;
 let allComments = [];
 let currentFilter = 'all';
 let currentSort = { column: 'likes', direction: 'desc' };
 
 document.getElementById('extractButton').addEventListener('click', async () => {
+  if (isExtracting) return;
+
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   
+  isExtracting = true;
   document.getElementById('extractButton').textContent = 'Extracting...';
+  document.getElementById('extractButton').disabled = true;
   
   await chrome.scripting.executeScript({
     target: { tabId: tab.id },
@@ -18,6 +23,8 @@ document.getElementById('extractButton').addEventListener('click', async () => {
       document.getElementById('controlPanel').classList.remove('hidden');
       document.getElementById('stats').classList.remove('hidden');
       document.getElementById('extractButton').textContent = 'Extract Comments';
+      document.getElementById('extractButton').disabled = false;
+      isExtracting = false;
       updateStats();
       displayComments();
     }
@@ -172,28 +179,6 @@ document.getElementById('exportCsv').addEventListener('click', () => {
   window.URL.revokeObjectURL(url);
 });
 
-// Add progress bar to popup
-document.body.insertAdjacentHTML('afterbegin', `
-  <div id="progressBar" class="hidden fixed top-0 left-0 w-full h-1 bg-gray-200">
-    <div class="h-full bg-blue-600 transition-all duration-300" style="width: 0%"></div>
-  </div>
-`);
-
-// Listen for progress updates
-chrome.runtime.onMessage.addListener((message) => {
-  if (message.type === 'progress') {
-    const progressBar = document.getElementById('progressBar');
-    const progressFill = progressBar.querySelector('div');
-    progressBar.classList.remove('hidden');
-    progressFill.style.width = `${message.value}%`;
-    
-    if (message.value >= 100) {
-      setTimeout(() => {
-        progressBar.classList.add('hidden');
-      }, 1000);
-    }
-  }
-});
 
 function getFilteredComments() {
   let comments = [...allComments];
@@ -233,7 +218,7 @@ function displayComments() {
     <tr class="hover:bg-gray-50">
       <td class="font-medium">
         <a href="https://facebook.com/${comment.profileId}" target="_blank" class="text-blue-600 hover:underline">
-          ${comment.name}
+          ${comment.fullName || comment.name}
         </a>
       </td>
       <td class="text-gray-500">${comment.profileId}</td>
@@ -248,4 +233,75 @@ function displayComments() {
     </tr>
   `).join('');
 }
+
+let progressBar;
+
+function updateProgressBar(value) {
+  if (!progressBar) {
+    progressBar = document.createElement('div');
+    progressBar.className = 'fixed top-0 left-0 w-full h-2 bg-blue-200';
+    progressBar.innerHTML = '<div class="h-full bg-blue-600 transition-all duration-300" style="width: 0%"></div>';
+    document.body.prepend(progressBar);
+  }
+  
+  const progressFill = progressBar.querySelector('div');
+  progressFill.style.width = `${value}%`;
+  
+  if (value >= 100) {
+    setTimeout(() => {
+      if (progressBar && progressBar.parentNode) {
+        progressBar.parentNode.removeChild(progressBar);
+        progressBar = null;
+      }
+    }, 1000);
+  }
+}
+
+function updateExtractionProgress(value) {
+  const progressBar = document.getElementById('extractionProgress');
+  if (!progressBar) {
+    const progressContainer = document.createElement('div');
+    progressContainer.className = 'mt-4';
+    progressContainer.innerHTML = `
+      <div class="text-sm font-medium text-gray-700">Extracting comments...</div>
+      <div id="extractionProgress" class="mt-1 h-2 w-full bg-gray-200 rounded-full">
+        <div class="h-full bg-blue-600 rounded-full" style="width: 0%"></div>
+      </div>
+    `;
+    document.getElementById('extractButton').insertAdjacentElement('afterend', progressContainer);
+  }
+  document.querySelector('#extractionProgress > div').style.width = `${value}%`;
+}
+
+function loadComments(comments) {
+  const batchSize = 1000;
+  let loadedComments = 0;
+
+  function loadBatch() {
+    const batch = comments.slice(loadedComments, loadedComments + batchSize);
+    allComments.push(...batch);
+    loadedComments += batch.length;
+
+    updateStats();
+    displayComments();
+
+    if (loadedComments < comments.length) {
+      setTimeout(loadBatch, 0);
+    } else {
+      document.getElementById('extractButton').textContent = 'Extract Comments';
+      document.getElementById('extractButton').disabled = false;
+      isExtracting = false;
+    }
+  }
+
+  loadBatch();
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'progress') {
+    updateProgressBar(message.value);
+  } else if (message.type === 'extractionProgress') {
+    updateExtractionProgress(message.value);
+  }
+});
 
