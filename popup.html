@@ -1,63 +1,127 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body {
-      width: 400px;
+      width: 800px;
+      height: 600px;
       padding: 16px;
-      font-family: Arial, sans-serif;
+      font-family: system-ui, -apple-system, sans-serif;
     }
-    .button {
-      width: 100%;
-      padding: 12px;
-      background: #1877f2;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: bold;
-      margin-bottom: 16px;
-    }
-    .button:hover {
-      background: #166fe5;
-    }
-    #results {
+    .table-container {
       max-height: 400px;
       overflow-y: auto;
-      font-size: 13px;
     }
-    .comment {
-      border: 1px solid #ddd;
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: white;
+      z-index: 1;
+    }
+    th, td {
       padding: 12px;
-      margin-bottom: 8px;
-      border-radius: 8px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
     }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
+    .sort-header {
+      cursor: pointer;
     }
-    .name {
-      color: #1877f2;
-      font-weight: bold;
+    .sort-header:hover {
+      background-color: #f9fafb;
     }
-    .meta {
-      color: #65676b;
-      font-size: 12px;
+    .filter-active {
+      background-color: #1d4ed8;
+      color: white;
     }
-    .content {
-      margin-bottom: 8px;
+    .image-preview {
+      max-width: 100px;
+      max-height: 100px;
+      cursor: pointer;
     }
-    .stats {
-      color: #65676b;
-      font-size: 12px;
+    @media print {
+      .no-print {
+        display: none;
+      }
+      .table-container {
+        max-height: none;
+      }
     }
   </style>
 </head>
-<body>
-  <button class="button" id="extractButton">Extract Comments</button>
-  <div id="results"></div>
+<body class="bg-gray-50">
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-4">
+        <!-- <img src="https://codexafrica.com/logo.png" alt="CodeX Africa" class="h-8" /> -->
+        <h1 class="text-2xl font-bold text-gray-900">CodeX Africa Facebook Comments Analyzer</h1>
+      </div>
+      <div class="flex gap-2">
+        <button id="reportButton" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+          Report
+        </button>
+        <button id="extractButton" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          Extract Comments
+        </button>
+      </div>
+    </div>
+
+    <div id="controlPanel" class="hidden mb-6">
+      <div class="flex justify-between items-center">
+        <div class="space-x-2">
+          <button class="filter-btn px-3 py-1.5 rounded-md border filter-active" data-filter="all">All Comments</button>
+          <button class="filter-btn px-3 py-1.5 rounded-md border" data-filter="top10">Top 10</button>
+          <button class="filter-btn px-3 py-1.5 rounded-md border" data-filter="top5">Top 5</button>
+        </div>
+        <div class="flex gap-2">
+          <button id="printTable" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+            Print
+          </button>
+          <button id="exportCsv" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+            Export to CSV
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table id="commentsTable">
+        <thead>
+          <tr class="bg-gray-50">
+            <th class="sort-header" data-sort="name">Name (click to view profile)</th>
+            <th class="sort-header" data-sort="profileId">Profile ID</th>
+            <th class="sort-header" data-sort="date">Date</th>
+            <th class="sort-header" data-sort="likes">Likes</th>
+            <th>Comment</th>
+            <th>Images</th>
+          </tr>
+        </thead>
+        <tbody id="commentsBody"></tbody>
+      </table>
+    </div>
+
+    <div id="stats" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
+      <div class="grid grid-cols-3 gap-4">
+        <div class="bg-white p-4 rounded-lg shadow-sm">
+          <div class="text-sm text-gray-500">Total Comments</div>
+          <div id="totalComments" class="text-2xl font-bold text-gray-900">0</div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm">
+          <div class="text-sm text-gray-500">Total Likes</div>
+          <div id="totalLikes" class="text-2xl font-bold text-gray-900">0</div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm">
+          <div class="text-sm text-gray-500">Avg. Likes per Comment</div>
+          <div id="avgLikes" class="text-2xl font-bold text-gray-900">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>

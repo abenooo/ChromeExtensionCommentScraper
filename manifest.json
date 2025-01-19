@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Facebook Comment Extractor",
+    "name": "Facebook Comment Extractor Pro",
     "version": "1.0",
-    "description": "Extracts comments from Facebook posts in a structured format",
+    "description": "Extract and analyze Facebook comments with advanced filtering and export options",
     "permissions": ["activeTab", "scripting"],
     "action": {
       "default_popup": "popup.html"
